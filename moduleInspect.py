@@ -2,6 +2,8 @@ from importlib import import_module
 from pkgutil import walk_packages
 import operator
 import inspect
+import pandas
+import pydoc
 import sys
 
 
@@ -60,5 +62,20 @@ class Module:
         return operator.attrgetter(attr)(self.module)
 
 
+def generate_documentation(module_name):
+    module = Module(module_name)
+    members = {'names': module.functions.keys() + module.class_methods.keys(),
+               'values': module.functions.values() + module.class_methods.values()}
+    doc_frame = {'module_name': module_name,
+                 'module_version': module.get_module_version(),
+                 'full_name': members['names'],
+                 'prefix': map(lambda name: name.split('.', 1)[1].rsplit('.', 1)[0], members['names']),
+                 'function_name': map(lambda name: name.rsplit('.', 1)[1], members['names']),
+                 'function_doc': map(lambda function: pydoc.render_doc(function), members['values'])}
+    return doc_frame
+
+
 if __name__ == "__main__":
-    module = Module('numpy')
+    doc_frame = generate_documentation('numpy')
+    pandas_frame = pandas.DataFrame(doc_frame)
+    print(pandas_frame.head())
