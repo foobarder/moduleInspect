@@ -34,7 +34,7 @@ class Module:
     def get_functions(self):
         functions = {}
         for submodule_name, submodule in self.submodules.items():
-            for function_name, function in inspect.getmembers(submodule, lambda f: inspect.isfunction(f)):
+            for function_name, function in inspect.getmembers(submodule, lambda f: inspect.isfunction(f) or inspect.isbuiltin(f)):
                 functions[join_members(submodule_name, function_name)] = function
         return functions
 
@@ -48,7 +48,7 @@ class Module:
     def get_class_methods(self):
         methods = {}
         for class_name, class_ in self.classes.items():
-            for method_name, method in inspect.getmembers(class_, lambda m: inspect.ismethod(m)):
+            for method_name, method in inspect.getmembers(class_, lambda m: inspect.ismethod(m) or inspect.isbuiltin(m)):
                 methods[join_members(class_name, method_name)] = method
         return methods
 
@@ -71,11 +71,15 @@ def generate_documentation(module_name):
                  'full_name': members['names'],
                  'prefix': map(lambda name: name.split('.', 1)[1].rsplit('.', 1)[0], members['names']),
                  'function_name': map(lambda name: name.rsplit('.', 1)[1], members['names']),
-                 'function_doc': map(lambda function: pydoc.render_doc(function), members['values'])}
+                 'function_doc': map(lambda function: pydoc.render_doc(function), members['values']),
+                 'argument': None,
+                 'argument_type': None,
+                 'argument_default_value': None,
+                 'argument_info': None}
     return doc_frame
 
 
 if __name__ == "__main__":
     doc_frame = generate_documentation('numpy')
     pandas_frame = pandas.DataFrame(doc_frame)
-    print(pandas_frame.head())
+    print(pandas_frame['full_name'].head())
