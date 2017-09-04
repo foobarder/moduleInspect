@@ -1,14 +1,76 @@
 from importlib import import_module
 from pkgutil import walk_packages
+import argparse
 import operator
 import inspect
 import pandas
 import pydoc
 import sys
+import re
+import os
 
 
 def join_members(*members):
     return '.'.join(members)
+
+
+def merge(x, y):
+    z = x.copy()
+    z.update(y)
+    return z
+
+
+def get_name(obj):
+    return obj.__name__
+
+
+def get_doc_string(obj):
+    return re.sub('\x08.', '', pydoc.render_doc(obj)) or obj.__doc__
+
+
+def get_argnames(obj):
+    if inspect.isbuiltin(obj):
+        function_name = get_name(obj)
+        function_doc = obj.__doc__ or strip_text(pydoc.render_doc(obj))
+        pattern = function_name + '\(.+?\)'
+        match = re.search(pattern, function_doc)
+        if match:
+            args = match.group().strip(function_name).translate(None, '()').split(',')
+            return tuple(re.search('\w+', arg).group() if re.search('\w+', arg) else None for arg in args)
+        else:
+            return (None,)
+    else:
+        return tuple(inspect.getargspec(obj).args)
+
+
+def get_prefix(name):
+    return name.split('.', 1)[1].rsplit('.', 1)[0]
+
+
+def get_argtypes(obj, defaults):
+    pass
+
+
+def get_argdefvalues(obj, args):
+    if inspect.isbuiltin(obj):
+        return (None,) * len(args)
+    else:
+        argspec = inspect.getargspec(obj)
+        arguments = argspec.args
+        defaults = argspec.defaults
+        if defaults:
+            signature = dict(zip(arguments[-len(defaults):], defaults))
+            return tuple(signature[arg] if arg in signature else None for arg in args)
+        else:
+            return (None,) * len(args)
+
+
+def get_arginfo(obj):
+    pass
+
+
+def strip_text(string):
+    return re.sub('\x08.', '', string.replace('\n', ''))
 
 
 class Module:
@@ -64,22 +126,48 @@ class Module:
 
 def generate_documentation(module_name):
     module = Module(module_name)
-    members = {'names': module.functions.keys() + module.class_methods.keys(),
-               'values': module.functions.values() + module.class_methods.values()}
     doc_frame = {'module_name': module_name,
                  'module_version': module.get_module_version(),
-                 'full_name': members['names'],
-                 'prefix': map(lambda name: name.split('.', 1)[1].rsplit('.', 1)[0], members['names']),
-                 'function_name': map(lambda name: name.rsplit('.', 1)[1], members['names']),
-                 'function_doc': map(lambda function: pydoc.render_doc(function), members['values']),
-                 'argument': None,
-                 'argument_type': None,
-                 'argument_default_value': None,
-                 'argument_info': None}
+                 'full_name': [],
+                 'prefix': [],
+                 'function_name': [],
+                 'function_doc': [],
+                 'argument': [],
+                 'argument_default_value': []}
+                 # 'argument_type': [],
+                 # 'argument_info': []}
+
+    for member_name, member in merge(module.functions, module.class_methods).items():
+        doc_frame['full_name'].append(member_name)
+        doc_frame['prefix'].append(get_prefix(member_name))
+        doc_frame['function_name'].append(get_name(member))
+        doc_frame['function_doc'].append(get_doc_string(member))
+        doc_frame['argument'].append(get_argnames(member))
+        doc_frame['argument_default_value'].append(get_argdefvalues(member, doc_frame['argument'][-1]))
     return doc_frame
 
 
+def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--module', nargs='+', required=True, metavar='NAME', help='module to generate a csv table for')
+    args = parser.parse_args()
+
+    def expand(x):
+        y = pandas.DataFrame(x.values.tolist())
+        return y.stack()
+
+    def format_frame(frame, index):
+        level_to_drop = 'level_{}'.format(len(index))
+        formated_frame = frame.set_index(index).apply(lambda x: expand(x), 1).stack().reset_index().drop(level_to_drop, 1)
+        formated_frame.columns = index + [x for x in frame.columns if x not in index]
+        return formated_frame
+
+    index = ['module_name', 'module_version', 'full_name', 'prefix', 'function_name', 'function_doc']
+    for module_name in args.module:
+        doc_frame = generate_documentation(module_name)
+        dframe = format_frame(pandas.DataFrame(doc_frame), index)
+        dframe.to_csv(os.path.join(os.getcwd(), join_members(module_name, 'csv')), index=False)
+
+
 if __name__ == "__main__":
-    doc_frame = generate_documentation('numpy')
-    pandas_frame = pandas.DataFrame(doc_frame)
-    print(pandas_frame['full_name'].head())
+    main()
