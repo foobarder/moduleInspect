@@ -1,9 +1,21 @@
 import pandas
 import os
-from mergetools import join_members, merge
 from extractiontools import (Module, get_name, get_doc_string, get_prefix,
                              strip_text, get_argnames, get_argtypes,
                              get_argdefvalues, get_arginfo)
+
+
+def join_members(*members):
+    """join_memebers(member1, ...) takes an orbitrary number of
+    arguments of type 'str'and concatinates them with using the '.' separator"""
+    return '.'.join(members)
+
+
+def merge(dictionaryA, dictionaryB):
+    """merge(dict_A, dict_B) merges two dictionaries"""
+    d = dictionaryA.copy()
+    d.update(dictionaryB)
+    return d
 
 
 def generate_documentation(module_name):
