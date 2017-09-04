@@ -8,6 +8,7 @@ from extractiontools import (Module, get_name, get_doc_string, get_prefix,
 
 
 def generate_documentation(module_name):
+    """generate_documentation(module_name) return a dictionary containing information about the module functions and methods"""
     module = Module(module_name)
     doc_frame = {'module_name': module_name,
                  'module_version': module.get_module_version(),
@@ -43,7 +44,7 @@ def main():
 
     def format_frame(frame, index):
         level_to_drop = 'level_{}'.format(len(index))
-        formated_frame = frame.set_index(index).apply(lambda x: expand(x), 1).stack().reset_index().drop(level_to_drop, 1)
+        formated_frame = frame.set_index(index).apply(lambda x: expand(x), 1).stack(dropna=False).reset_index().drop(level_to_drop, 1)
         formated_frame.columns = index + [x for x in frame.columns if x not in index]
         return formated_frame
 
