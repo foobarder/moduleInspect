@@ -77,8 +77,8 @@ class Module:
         return full_name.split('.', 1)[1]
 
     def get_submodule(self, attr):
-        "get_submodule(self, attr) Module method
-        return submodule object of the module by its attribute."
+        """get_submodule(self, attr) Module method
+        return submodule object of the module by its attribute."""
         return operator.attrgetter(attr)(self.module)
 
 
