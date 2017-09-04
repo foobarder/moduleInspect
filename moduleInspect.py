@@ -29,12 +29,7 @@ class Module:
     def get_module_version(self):
         """get_module_version(self) Module method
         return the version of the module taken as an instance argument."""
-        try:
-            version = self.module.__version__
-        except AttributeError:
-            return None
-        else:
-            return version
+        return self.module.__version__
 
     def get_submodules(self):
         """get_submodules(self) Module method
@@ -197,7 +192,7 @@ def main(module_name):
 
     def format_frame(frame, index):
         level_to_drop = 'level_{}'.format(len(index))
-        formated_frame = frame.set_index(index).apply(lambda x: expand(x), 1).stack(dropna=False).reset_index().drop(level_to_drop, 1)
+        formated_frame = frame.set_index(index).apply(lambda x: expand(x), 1).stack().reset_index().drop(level_to_drop, 1)
         formated_frame.columns = index + [x for x in frame.columns if x not in index]
         return formated_frame
 
