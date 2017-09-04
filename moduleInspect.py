@@ -1,9 +1,15 @@
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
 from importlib import import_module
 from pkgutil import walk_packages
+import builtins
 import operator
 import inspect
+import future
 import pandas
 import pydoc
+import past
 import sys
 import re
 import os
