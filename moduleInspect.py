@@ -1,4 +1,3 @@
-import argparse
 import pandas
 import os
 from mergetools import join_members, merge
@@ -33,10 +32,8 @@ def generate_documentation(module_name):
     return doc_frame
 
 
-def main():
-    parser = argparse.ArgumentParser()
-    parser.add_argument('--module', nargs='+', required=True, metavar='NAME', help='module to generate a csv table for')
-    args = parser.parse_args()
+def main(module_name):
+    index = ['module_name', 'module_version', 'full_name', 'prefix', 'function_name', 'function_doc']
 
     def expand(x):
         y = pandas.DataFrame(x.values.tolist())
@@ -48,12 +45,10 @@ def main():
         formated_frame.columns = index + [x for x in frame.columns if x not in index]
         return formated_frame
 
-    index = ['module_name', 'module_version', 'full_name', 'prefix', 'function_name', 'function_doc']
-    for module_name in args.module:
-        doc_frame = generate_documentation(module_name)
-        dframe = format_frame(pandas.DataFrame(doc_frame), index)
-        dframe.to_csv(os.path.join(os.getcwd(), join_members(module_name, 'csv')), index=False)
+    doc_frame = generate_documentation(module_name)
+    dframe = format_frame(pandas.DataFrame(doc_frame), index)
+    dframe.to_csv(os.path.join(os.getcwd(), join_members(module_name, 'csv')), index=False)
 
 
 if __name__ == "__main__":
-    main()
+    main('numpy')
