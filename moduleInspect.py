@@ -41,7 +41,7 @@ def main(module_name):
 
     def format_frame(frame, index):
         level_to_drop = 'level_{}'.format(len(index))
-        formated_frame = frame.set_index(index).apply(lambda x: expand(x), 1).stack(dropna=False).reset_index().drop(level_to_drop, 1)
+        formated_frame = frame.set_index(index).apply(lambda x: expand(x), 1).stack().reset_index().drop(level_to_drop, 1)
         formated_frame.columns = index + [x for x in frame.columns if x not in index]
         return formated_frame
 
