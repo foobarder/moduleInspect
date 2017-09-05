@@ -109,11 +109,12 @@ def strip_text(string):
     return re.sub('\x08.', '', string.replace('\n', ''))
 
 
+
 def get_argnames(obj):
     """get_argnames(obj) return a tuple of the object argument names."""
     if inspect.isbuiltin(obj):
         function_name = get_name(obj)
-        function_doc = obj.__doc__ or strip_text(pydoc.render_doc(obj))
+        function_doc = strip_text(pydoc.render_doc(obj))
         pattern = function_name + '\(.+?\)'
         match = re.search(pattern, function_doc)
         if match:
