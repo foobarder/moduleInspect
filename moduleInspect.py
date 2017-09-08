@@ -16,6 +16,7 @@ import sys
 import ast
 import re
 import os
+from collections import OrderedDict
 
 
 NAN = float('NaN')
@@ -124,13 +125,13 @@ def get_signature(obj):
             signature = match[0][1:-1] if match[0][1:-1] != '...' and match[0] != '' else match[1][1:-1]
             return signature
         else:
-            return match[0][1:-1]
+            return match[0][1:-1] if match[0][1:-1] != '...' else ''
     else:
-        return None
+        return ''
 
 
 def get_args(obj):
-    arguments = {}
+    arguments = OrderedDict()
     if inspect.isbuiltin(obj):
         obj_signature = get_signature(obj)
         if obj_signature:
@@ -150,7 +151,7 @@ def get_args(obj):
         args = argspec.args
         defaults = argspec.defaults
         if defaults:
-            args_with_default_values = dict(zip(args[-len(defaults):], defaults))
+            args_with_default_values = OrderedDict(zip(args[-len(defaults):], defaults))
             for arg in args:
                 if arg in args_with_default_values:
                     arguments[arg] = args_with_default_values[arg]
@@ -158,7 +159,7 @@ def get_args(obj):
                     arguments[arg] = NAN
             return arguments
         else:
-            return dict(zip(args, [NAN] * len(args)))
+            return OrderedDict(zip(args, [NAN] * len(args)))
 
 
 def guess_arg_type(arg_default_values):
@@ -196,9 +197,14 @@ def merge(dictionaryA, dictionaryB):
     return d
 
 
-def generate_unittest(function, args, prefix, filename='unittest.txt'):
+def generate_template(dataframe, filename='unittest_template.txt'):
+    pass
+
+
+def generate_unittest(function, full_name, args, filename='unittest.txt'):
     function_signature = get_signature(function)
     arg_count = 1
+    signature = []
     if function_signature:
         with open(filename, 'a') as testfile:
             for item in args.items():
@@ -206,15 +212,23 @@ def generate_unittest(function, args, prefix, filename='unittest.txt'):
                     float(item[1])
                     if not math.isnan(item[1]):
                         testfile.write("a{}={}\n".format(arg_count, item[1]))
+                        signature.append(item[0] + '=a{}'.format(arg_count))
+                        arg_count += 1
                     elif item[0] != 'self':
                         testfile.write("a{}=\n".format(arg_count))
+                        signature.append(item[0] + '=a{}'.format(arg_count))
+                        arg_count += 1
+                    else:
+                        signature.append(item[0])
                 except (ValueError, TypeError):
                     if item[0] != 'self':
                         testfile.write("a{}={}\n".format(arg_count, item[1]))
+                        signature.append(item[0] + '=a{}'.format(arg_count))
+                        arg_count += 1
                     else:
-                        pass
-                arg_count += 1
-            testfile.write(prefix + '(' + function_signature + ')\n\n\n')
+                        signature.append(item[0])
+
+            testfile.write(full_name + '(' + ', '.join(signature) + ')\n\n\n\n')
 
 
 def generate_documentation(module_name):
@@ -241,7 +255,7 @@ def generate_documentation(module_name):
         doc_frame['argument_type'].append(guess_arg_type(doc_frame['argument_default_value'][-1]))
         doc_frame['argument_info'].append(get_arginfo(member, doc_frame['argument'][-1]))
 
-        generate_unittest(member, get_args(member), doc_frame['prefix'][-1])
+        generate_unittest(member, doc_frame['full_name'][-1], get_args(member))
     return doc_frame
 
 
